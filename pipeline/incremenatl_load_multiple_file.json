@@ -180,6 +180,10 @@
 													"FileName": {
 														"value": "@concat(\nitem().TableName,\n'_',\nformatDateTime(utcNow(),'yyyyMMddHHmmss'),\n'.csv'\n)",
 														"type": "Expression"
+													},
+													"FolderPath": {
+														"value": "@concat(\n'exported_data/',\nitem().TableName,\n'/load_date=',\nformatDateTime(\nactivity('Watermark_Lookup').output.firstRow.CurrentWatermark,\n'yyyy-MM-dd'\n)\n)",
+														"type": "Expression"
 													}
 												}
 											}
