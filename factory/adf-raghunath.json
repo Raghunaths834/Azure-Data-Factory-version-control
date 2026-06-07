@@ -1,0 +1,15 @@
+{
+	"name": "adf-raghunath",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "6385bdff-f6a5-418d-9f8e-4d882b784f4b",
+		"tenantId": "dfcbe9f1-cd74-4609-a53a-2a3631101053"
+	}
+}

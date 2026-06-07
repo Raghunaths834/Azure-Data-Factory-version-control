@@ -1,0 +1,275 @@
+{
+	"name": "incremenatl_load_multiple_file",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach_Table",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup_metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup_metadata').output.value",
+						"type": "Expression"
+					},
+					"batchCount": 3,
+					"activities": [
+						{
+							"name": "Watermark_Lookup",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat(\n'SELECT MAX(',\nitem().WatermarkColumn,\n') AS CurrentWatermark FROM ',\nitem().SchemaName,\n'.',\nitem().TableName\n)",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "ds_SQL_table",
+									"type": "DatasetReference",
+									"parameters": {
+										"SQL_DB_table_name": {
+											"value": "@item().TableName",
+											"type": "Expression"
+										},
+										"SchemaName": {
+											"value": "@item().SchemaName",
+											"type": "Expression"
+										}
+									}
+								}
+							}
+						},
+						{
+							"name": "Get_Row_count",
+							"type": "Script",
+							"dependsOn": [
+								{
+									"activity": "Watermark_Lookup",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "ls_AzureSqlDatabase",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "@concat(\n'SELECT COUNT(*) AS TotalRows FROM ',\nitem().SchemaName,\n'.',\nitem().TableName,\n' WHERE ',\nitem().WatermarkColumn,\n' > ''',\nitem().LastWatermarkValue,\n''' AND ',\nitem().WatermarkColumn,\n' <= ''',\nactivity('Watermark_Lookup').output.firstRow.CurrentWatermark,\n''''\n)",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						},
+						{
+							"name": "If New Rows",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "Get_Row_count",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@greater(\n    int(activity('Get_Row_count').output.resultSets[0].rows[0].TotalRows),\n    0\n)",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "Copy tables",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "AzureSqlSource",
+												"sqlReaderQuery": {
+													"value": "@concat(\n'SELECT * FROM ',\nitem().SchemaName,\n'.',\nitem().TableName,\n' WHERE ',\nitem().WatermarkColumn,\n' > ''',\nitem().LastWatermarkValue,\n''' AND ',\nitem().WatermarkColumn,\n' <= ''',\nactivity('Watermark_Lookup').output.firstRow.CurrentWatermark,\n''''\n)",
+													"type": "Expression"
+												},
+												"queryTimeout": "02:00:00",
+												"partitionOption": "None"
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobStorageWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "ds_SQL_table",
+												"type": "DatasetReference",
+												"parameters": {
+													"SQL_DB_table_name": {
+														"value": "@item().TableName",
+														"type": "Expression"
+													},
+													"SchemaName": {
+														"value": "@item().SchemaName",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "ds_CSV",
+												"type": "DatasetReference",
+												"parameters": {
+													"FileName": {
+														"value": "@concat(\nitem().TableName,\n'_',\nformatDateTime(utcNow(),'yyyyMMddHHmmss'),\n'.csv'\n)",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "Update Metadata",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "Copy tables",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[dbo].[usp_UpdateWatermark]",
+											"storedProcedureParameters": {
+												"CurrentWatermark": {
+													"value": {
+														"value": "@activity('Watermark_Lookup').output.firstRow.CurrentWatermark",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												},
+												"SchemaName": {
+													"value": {
+														"value": "@item().SchemaName",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"TableName": {
+													"value": {
+														"value": "@item().TableName",
+														"type": "Expression"
+													},
+													"type": "String"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "ls_AzureSqlDatabase",
+											"type": "LinkedServiceReference"
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Lookup_metadata",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT\n    SchemaName,\n    TableName,\n    WatermarkColumn,\n    LastWatermarkValue\nFROM ETL_Metadata\nWHERE IsActive = 1",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "TableList",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2026-06-07T08:52:43Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
