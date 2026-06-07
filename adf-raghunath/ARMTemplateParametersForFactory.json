@@ -1,0 +1,36 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-raghunath"
+		},
+		"AzureBlobStorage1_connectionString": {
+			"value": ""
+		},
+		"AzureSqlDatabase1_password": {
+			"value": ""
+		},
+		"ls_AzureSqlDatabase_password": {
+			"value": ""
+		},
+		"AzureSqlDatabase1_properties_typeProperties_server": {
+			"value": "server-raghunath.database.windows.net"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_database": {
+			"value": "db_raghunath"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_userName": {
+			"value": "raghunathadmin"
+		},
+		"ls_AzureSqlDatabase_properties_typeProperties_server": {
+			"value": "server-raghunath.database.windows.net"
+		},
+		"ls_AzureSqlDatabase_properties_typeProperties_database": {
+			"value": "db_raghunath"
+		},
+		"ls_AzureSqlDatabase_properties_typeProperties_userName": {
+			"value": "raghunathadmin"
+		}
+	}
+}
