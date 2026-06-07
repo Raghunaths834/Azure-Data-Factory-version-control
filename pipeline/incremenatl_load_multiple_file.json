@@ -186,7 +186,7 @@
 										]
 									},
 									{
-										"name": "Update Metadata",
+										"name": "Update Metadata Table",
 										"type": "SqlServerStoredProcedure",
 										"dependsOn": [
 											{
