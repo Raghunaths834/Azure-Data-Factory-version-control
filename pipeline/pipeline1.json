@@ -109,7 +109,8 @@
 										"FileName": {
 											"value": "@concat(item().TABLE_SCHEMA,'_',item().TABLE_NAME)",
 											"type": "Expression"
-										}
+										},
+										"FolderPath": "@concat( 'exported_data/', item().TableName, '/load_date=', formatDateTime( activity('Watermark_Lookup').output.firstRow.CurrentWatermark, 'yyyy-MM-dd' ) )"
 									}
 								}
 							]
