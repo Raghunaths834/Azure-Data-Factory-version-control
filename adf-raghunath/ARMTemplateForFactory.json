@@ -164,7 +164,8 @@
 												"FileName": {
 													"value": "@concat(item().TABLE_SCHEMA,'_',item().TABLE_NAME,'.CSV')",
 													"type": "Expression"
-												}
+												},
+												"FolderPath": "@concat( 'exported_data/', item().TableName, '/load_date=', formatDateTime( activity('Watermark_Lookup').output.firstRow.CurrentWatermark, 'yyyy-MM-dd' ) )"
 											}
 										}
 									]
@@ -368,6 +369,10 @@
 														"parameters": {
 															"FileName": {
 																"value": "@concat(\nitem().TableName,\n'_',\nformatDateTime(utcNow(),'yyyyMMddHHmmss'),\n'.csv'\n)",
+																"type": "Expression"
+															},
+															"FolderPath": {
+																"value": "@concat(\n'exported_data/',\nitem().TableName,\n'/load_date=',\nformatDateTime(\nactivity('Watermark_Lookup').output.firstRow.CurrentWatermark,\n'yyyy-MM-dd'\n)\n)",
 																"type": "Expression"
 															}
 														}
@@ -585,7 +590,8 @@
 												"FileName": {
 													"value": "@concat(item().TABLE_SCHEMA,'_',item().TABLE_NAME)",
 													"type": "Expression"
-												}
+												},
+												"FolderPath": "@concat( 'exported_data/', item().TableName, '/load_date=', formatDateTime( activity('Watermark_Lookup').output.firstRow.CurrentWatermark, 'yyyy-MM-dd' ) )"
 											}
 										}
 									]
@@ -636,6 +642,9 @@
 				"parameters": {
 					"FileName": {
 						"type": "string"
+					},
+					"FolderPath": {
+						"type": "string"
 					}
 				},
 				"annotations": [],
@@ -647,7 +656,10 @@
 							"value": "@dataset().FileName",
 							"type": "Expression"
 						},
-						"folderPath": "exported_data",
+						"folderPath": {
+							"value": "@dataset().FolderPath",
+							"type": "Expression"
+						},
 						"container": "datalake1"
 					},
 					"columnDelimiter": ",",
